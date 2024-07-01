@@ -778,8 +778,6 @@ class BetterPlayerController {
     if (currentVideoPlayerValue.initialized &&
         !_hasCurrentDataSourceInitialized) {
       _hasCurrentDataSourceInitialized = true;
-      debugPrint(
-          "BetterPlayerController: Video initialized ${currentVideoPlayerValue.isLiveStream}");
       _postEvent(
           BetterPlayerEvent(BetterPlayerEventType.initialized, parameters: {
         "duration": currentVideoPlayerValue.duration,
@@ -1077,10 +1075,10 @@ class BetterPlayerController {
       _wasControlsEnabledBeforePiP = _controlsEnabled;
       setControlsEnabled(false);
       if (Platform.isAndroid) {
-        _wasInFullScreenBeforePiP = _isFullScreen;
+        _wasInFullScreenBeforePiP = false;
         await videoPlayerController?.enablePictureInPicture(
             left: 0, top: 0, width: 0, height: 0);
-        enterFullScreen();
+        // enterFullScreen();
         _postEvent(BetterPlayerEvent(BetterPlayerEventType.pipStart));
         return;
       }
@@ -1133,7 +1131,6 @@ class BetterPlayerController {
 
     final bool isPipSupported =
         (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
-
     return isPipSupported && !_isFullScreen;
   }
 

@@ -391,7 +391,7 @@ internal class RiverPlayer(
                 setPlayer(ForwardingPlayer(exoPlayer))
                 setUseNextAction(false)
                 setUsePreviousAction(false)
-                setUseStopAction(false)
+
             }
 
             setupMediaSession(context)?.let {
@@ -404,12 +404,14 @@ internal class RiverPlayer(
             refreshRunnable = Runnable {
                 val playbackState: PlaybackStateCompat = if (exoPlayer?.isPlaying == true) {
                     PlaybackStateCompat.Builder()
-                        .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
+                        .setActions(PlaybackStateCompat.ACTION_PLAY or
+                                PlaybackStateCompat.ACTION_PAUSE)
                         .setState(PlaybackStateCompat.STATE_PLAYING, position, 1.0f)
                         .build()
                 } else {
                     PlaybackStateCompat.Builder()
-                        .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
+                        .setActions(PlaybackStateCompat.ACTION_PLAY or
+                                PlaybackStateCompat.ACTION_PAUSE)
                         .setState(PlaybackStateCompat.STATE_PAUSED, position, 1.0f)
                         .build()
                 }
