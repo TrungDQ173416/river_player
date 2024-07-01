@@ -120,6 +120,9 @@ class RiverPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     customDefaultLoadControl, result
                 )
                 videoPlayers.put(handle.id(), player)
+                player.setupMediaSession(flutterState!!.applicationContext)
+                startPictureInPictureListenerTimer(player)
+
             }
             PRE_CACHE_METHOD -> preCache(call, result)
             STOP_PRE_CACHE_METHOD -> stopPreCache(call, result)
@@ -402,15 +405,19 @@ class RiverPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
 
     private fun isPictureInPictureSupported(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && activity != null && activity!!.packageManager
+        val res = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && activity != null && activity!!.packageManager
             .hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+            if (res && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                activity!!.setPictureInPictureParams(PictureInPictureParams.Builder().setAutoEnterEnabled(true).build())
+            }
+            return res;
     }
 
     private fun enablePictureInPicture(player: RiverPlayer) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            player.setupMediaSession(flutterState!!.applicationContext)
-            activity!!.enterPictureInPictureMode(PictureInPictureParams.Builder().build())
-            startPictureInPictureListenerTimer(player)
+            val builder = PictureInPictureParams.Builder()
+            activity!!.enterPictureInPictureMode(builder.build())
+
             player.onPictureInPictureStatusChanged(true)
         }
     }

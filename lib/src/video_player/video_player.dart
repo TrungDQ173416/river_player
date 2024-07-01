@@ -223,8 +223,6 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
       switch (event.eventType) {
         case VideoEventType.initialized:
-          debugPrint(
-              "Event player controller ${event.duration} ${event.isLiveStream}");
           value = value.copyWith(
               duration: event.duration,
               size: event.size,
