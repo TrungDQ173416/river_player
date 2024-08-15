@@ -8,10 +8,14 @@ import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.util.LongSparseArray
+import android.util.Rational
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import ir.r3r.river_player.RiverPlayerCache.releaseCache
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -22,6 +26,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.EventChannel
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.embedding.engine.plugins.lifecycle.HiddenLifecycleReference
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.view.TextureRegistry
 import java.lang.Exception
@@ -39,6 +44,10 @@ class RiverPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     private var activity: Activity? = null
     private var pipHandler: Handler? = null
     private var pipRunnable: Runnable? = null
+    private var currentPlayer: RiverPlayer? = null
+    private val pipAspectRatio = Rational(16, 9)
+    private var showPictureInPictureAutomatically: Boolean = false
+
     override fun onAttachedToEngine(binding: FlutterPluginBinding) {
         val loader = FlutterLoader()
         flutterState = FlutterState(
@@ -75,13 +84,38 @@ class RiverPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         activity = binding.activity
+         setLifeCycleObserverForPictureInPicture(binding)
     }
 
     override fun onDetachedFromActivityForConfigChanges() {}
 
-    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {}
+    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+        setLifeCycleObserverForPictureInPicture(binding)
+    }
 
-    override fun onDetachedFromActivity() {}
+    override fun onDetachedFromActivity() {
+    }
+
+     private fun setLifeCycleObserverForPictureInPicture(binding: ActivityPluginBinding) {
+        (binding.lifecycle as HiddenLifecycleReference)
+            .lifecycle
+            .addObserver(LifecycleEventObserver { _, event ->
+                Log.d("LifecycleEvent: ", event.toString())
+                // Do enterPictureInPictureMode when can not use setAutoEnterEnabled.
+                if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                    if (event == Lifecycle.Event.ON_PAUSE)
+                        if (this.showPictureInPictureAutomatically && this.activity?.isInPictureInPictureMode != true) {
+                            this.currentPlayer?.setupMediaSession(flutterState!!.applicationContext)
+                            val params =
+                                PictureInPictureParams.Builder()
+                                    .setAspectRatio(pipAspectRatio)
+                                    .setSourceRectHint(Rect())
+                                    .build()
+                            this.activity?.enterPictureInPictureMode(params)
+                        }
+                }
+            })
+    }
 
     private fun disposeAllPlayers() {
         for (i in 0 until videoPlayers.size()) {
@@ -190,6 +224,11 @@ class RiverPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     call.argument(HEIGHT_PARAMETER)!!,
                     call.argument(BITRATE_PARAMETER)!!
                 )
+                result.success(null)
+            }
+            SETUP_AUTOMATIC_PICTURE_IN_PICTURE_TRANSITION -> {
+                val willStartPIPPIP = call.argument<Boolean?>(WILL_START_PIP)
+                setupAutomaticPictureInPictureTransition(willStartPIPPIP ?: false, player)
                 result.success(null)
             }
             ENABLE_PICTURE_IN_PICTURE_METHOD -> {
@@ -375,10 +414,12 @@ class RiverPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     val notificationChannelName =
                         getParameter<String?>(dataSource, NOTIFICATION_CHANNEL_NAME_PARAMETER, null)
                     val activityName =
-                        getParameter(dataSource, ACTIVITY_NAME_PARAMETER, "MainActivity")
+                        getParameter(dataSource, ACTIVITY_NAME_PARAMETER, "${flutterState?.applicationContext!!.applicationContext.packageName}.MainActivity")
+                    val packageName =
+                        getParameter(dataSource, PACKAGE_NAME_PARAMETER, flutterState?.applicationContext!!.applicationContext.packageName)
                     betterPlayer.setupPlayerNotification(
                         flutterState?.applicationContext!!,
-                        title, author, imageUrl, notificationChannelName, activityName
+                        title, author, imageUrl, notificationChannelName, activityName,  packageName
                     )
                 }
             }
@@ -407,10 +448,23 @@ class RiverPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     private fun isPictureInPictureSupported(): Boolean {
         val res = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && activity != null && activity!!.packageManager
             .hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
-            if (res && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                activity!!.setPictureInPictureParams(PictureInPictureParams.Builder().setAutoEnterEnabled(true).build())
-            }
+            
             return res;
+    }
+
+    private fun setupAutomaticPictureInPictureTransition(willStartPIP: Boolean, player: RiverPlayer) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            player.setupMediaSession(flutterState!!.applicationContext)
+            val params = PictureInPictureParams.Builder()
+                .setAspectRatio(pipAspectRatio)
+                .setSourceRectHint(Rect())
+                .setAutoEnterEnabled(willStartPIP)
+                .build()
+            activity?.setPictureInPictureParams(params)
+        } 
+        currentPlayer = player
+        showPictureInPictureAutomatically = willStartPIP
+        
     }
 
     private fun enablePictureInPicture(player: RiverPlayer) {
@@ -519,6 +573,7 @@ class RiverPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         private const val DRM_HEADERS_PARAMETER = "drmHeaders"
         private const val DRM_CLEARKEY_PARAMETER = "clearKey"
         private const val MIX_WITH_OTHERS_PARAMETER = "mixWithOthers"
+        private const val WILL_START_PIP = "willStartPIP"
         const val URL_PARAMETER = "url"
         const val PRE_CACHE_SIZE_PARAMETER = "preCacheSize"
         const val MAX_CACHE_SIZE_PARAMETER = "maxCacheSize"
@@ -526,6 +581,7 @@ class RiverPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         const val HEADER_PARAMETER = "header_"
         const val FILE_PATH_PARAMETER = "filePath"
         const val ACTIVITY_NAME_PARAMETER = "activityName"
+        const val PACKAGE_NAME_PARAMETER = "packageName"
         const val MIN_BUFFER_MS = "minBufferMs"
         const val MAX_BUFFER_MS = "maxBufferMs"
         const val BUFFER_FOR_PLAYBACK_MS = "bufferForPlaybackMs"
@@ -544,6 +600,7 @@ class RiverPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         private const val SET_SPEED_METHOD = "setSpeed"
         private const val SET_TRACK_PARAMETERS_METHOD = "setTrackParameters"
         private const val SET_AUDIO_TRACK_METHOD = "setAudioTrack"
+        private const val SETUP_AUTOMATIC_PICTURE_IN_PICTURE_TRANSITION = "setupAutomaticPictureInPictureTransition"
         private const val ENABLE_PICTURE_IN_PICTURE_METHOD = "enablePictureInPicture"
         private const val DISABLE_PICTURE_IN_PICTURE_METHOD = "disablePictureInPicture"
         private const val IS_PICTURE_IN_PICTURE_SUPPORTED_METHOD = "isPictureInPictureSupported"

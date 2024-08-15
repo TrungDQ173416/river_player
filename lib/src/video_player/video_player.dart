@@ -299,6 +299,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     String? notificationChannelName,
     Duration? overriddenDuration,
     String? activityName,
+    String? packageName,
   }) {
     return _setDataSource(
       DataSource(
@@ -312,6 +313,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         notificationChannelName: notificationChannelName,
         overriddenDuration: overriddenDuration,
         activityName: activityName,
+        packageName: packageName,
       ),
     );
   }
@@ -342,6 +344,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     String? certificateUrl,
     Map<String, String>? drmHeaders,
     String? activityName,
+    String? packageName,
     String? clearKey,
     String? videoExtension,
   }) {
@@ -365,6 +368,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         certificateUrl: certificateUrl,
         drmHeaders: drmHeaders,
         activityName: activityName,
+        package: packageName,
         clearKey: clearKey,
         videoExtension: videoExtension,
       ),
@@ -383,6 +387,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       String? notificationChannelName,
       Duration? overriddenDuration,
       String? activityName,
+      String? packageName,
       String? clearKey}) {
     return _setDataSource(
       DataSource(
@@ -395,6 +400,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           notificationChannelName: notificationChannelName,
           overriddenDuration: overriddenDuration,
           activityName: activityName,
+          package: packageName,
           clearKey: clearKey),
     );
   }
@@ -474,6 +480,10 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       _timer = Timer.periodic(
         const Duration(milliseconds: 300),
         (Timer timer) async {
+          if (timer != _timer) {
+            timer.cancel();
+            return;
+          }
           if (_isDisposed) {
             return;
           }
@@ -598,6 +608,14 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         _textureId, width, height, bitrate);
   }
 
+  Future<void> setupAutomaticPictureInPictureTransition(
+      {bool? willStartPIP}) async {
+    await _videoPlayerPlatform.setupAutomaticPictureInPictureTransition(
+      textureId: textureId,
+      willStartPIP: willStartPIP,
+    );
+  }
+
   Future<void> enablePictureInPicture(
       {double? top, double? left, double? width, double? height}) async {
     await _videoPlayerPlatform.enablePictureInPicture(
@@ -632,6 +650,10 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
   void setMixWithOthers(bool mixWithOthers) {
     _videoPlayerPlatform.setMixWithOthers(_textureId, mixWithOthers);
+  }
+
+  void setDuration(Duration duration) {
+    value = value.copyWith(duration: duration);
   }
 
   static Future clearCache() async {

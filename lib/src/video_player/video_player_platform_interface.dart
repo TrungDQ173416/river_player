@@ -138,6 +138,14 @@ abstract class VideoPlayerPlatform {
     throw UnimplementedError('getAbsolutePosition() has not been implemented.');
   }
 
+  Future<void> setupAutomaticPictureInPictureTransition({
+    int? textureId,
+    bool? willStartPIP,
+  }) {
+    throw UnimplementedError(
+        'setupAutomaticPictureInPictureTransition() has not been implemented.');
+  }
+
   ///Enables PiP mode.
   Future<void> enablePictureInPicture(int? textureId, double? top, double? left,
       double? width, double? height) {
@@ -226,6 +234,7 @@ class DataSource {
     this.certificateUrl,
     this.drmHeaders,
     this.activityName,
+    this.packageName,
     this.clearKey,
     this.videoExtension,
   }) : assert(uri == null || asset == null);
@@ -301,6 +310,8 @@ class DataSource {
   final Map<String, String>? drmHeaders;
 
   final String? activityName;
+
+  final String? packageName;
 
   final String? clearKey;
 

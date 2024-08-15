@@ -469,6 +469,8 @@ class BetterPlayerController {
           drmHeaders: _betterPlayerDataSource?.drmConfiguration?.headers,
           activityName:
               _betterPlayerDataSource?.notificationConfiguration?.activityName,
+          packageName:
+              _betterPlayerDataSource?.notificationConfiguration?.packageName,
           clearKey: _betterPlayerDataSource?.drmConfiguration?.clearKey,
           videoExtension: _betterPlayerDataSource!.videoExtension,
         );
@@ -496,6 +498,8 @@ class BetterPlayerController {
             overriddenDuration: _betterPlayerDataSource!.overriddenDuration,
             activityName: _betterPlayerDataSource
                 ?.notificationConfiguration?.activityName,
+            packageName:
+                _betterPlayerDataSource?.notificationConfiguration?.packageName,
             clearKey: _betterPlayerDataSource?.drmConfiguration?.clearKey);
         break;
       case BetterPlayerDataSourceType.memory:
@@ -516,6 +520,8 @@ class BetterPlayerController {
               overriddenDuration: _betterPlayerDataSource!.overriddenDuration,
               activityName: _betterPlayerDataSource
                   ?.notificationConfiguration?.activityName,
+              packageName: _betterPlayerDataSource
+                  ?.notificationConfiguration?.packageName,
               clearKey: _betterPlayerDataSource?.drmConfiguration?.clearKey);
           _tempFiles.add(file);
         } else {
@@ -1059,6 +1065,29 @@ class BetterPlayerController {
     return _overriddenFit ?? betterPlayerConfiguration.fit;
   }
 
+  ///Set up to start Picture in Picture automatically when close app.
+  ///When device is not supported, PiP mode won't be open.
+  Future<void>? setupAutomaticPictureInPictureTransition(
+      {required bool willStartPIP}) async {
+    if (videoPlayerController == null) {
+      throw StateError("The data source has not been initialized");
+    }
+
+    final bool isPipSupported =
+        (await videoPlayerController?.isPictureInPictureSupported()) ?? false;
+
+    if (isPipSupported) {
+      await videoPlayerController?.setupAutomaticPictureInPictureTransition(
+        willStartPIP: willStartPIP,
+      );
+    } else {
+      BetterPlayerUtils.log(
+          "Picture in picture is not supported in this device. If you're "
+          "using Android, please check if you're using activity v2 "
+          "embedding.");
+    }
+  }
+
   ///Enable Picture in Picture (PiP) mode. [betterPlayerGlobalKey] is required
   ///to open PiP mode in iOS. When device is not supported, PiP mode won't be
   ///open.
@@ -1216,6 +1245,20 @@ class BetterPlayerController {
     }
 
     videoPlayerController!.setMixWithOthers(mixWithOthers);
+  }
+
+  void setDuration(Duration duration) {
+    if (videoPlayerController != null) {
+      videoPlayerController!.setDuration(duration);
+      _postEvent(
+        BetterPlayerEvent(
+          BetterPlayerEventType.setDuration,
+          parameters: <String, dynamic>{
+            _durationParameter: duration,
+          },
+        ),
+      );
+    }
   }
 
   ///Clear all cached data. Video player controller must be initialized to
