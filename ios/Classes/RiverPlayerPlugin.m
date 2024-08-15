@@ -403,6 +403,7 @@ bool _remoteCommandsInitialized = false;
             double top = [argsMap[@"top"] doubleValue];
             double width = [argsMap[@"width"] doubleValue];
             double height = [argsMap[@"height"] doubleValue];
+            NSLog(@"enablePictureInPicture left: %f, top: %f, width: %f, height: %f", left, top, width, height);
             [player enablePictureInPicture:CGRectMake(left, top, width, height)];
         } else if ([@"isPictureInPictureSupported" isEqualToString:call.method]){
             if (@available(iOS 9.0, *)){
@@ -466,7 +467,11 @@ bool _remoteCommandsInitialized = false;
                 }
             }
             result(nil);
-        } else {
+        } else if ([@"setupAutomaticPictureInPictureTransition" isEqualToString:call.method]){
+            // TODO: Implement
+            NSLog(@"setupAutomaticPictureInPictureTransition willStartPIP: %d", [argsMap[@"willStartPIP"] boolValue]);
+            [player initPipController];
+        }  else {
             result(FlutterMethodNotImplemented);
         }
     }
