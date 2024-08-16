@@ -470,7 +470,7 @@ bool _remoteCommandsInitialized = false;
         } else if ([@"setupAutomaticPictureInPictureTransition" isEqualToString:call.method]){
             // TODO: Implement
             NSLog(@"setupAutomaticPictureInPictureTransition willStartPIP: %d", [argsMap[@"willStartPIP"] boolValue]);
-            [player initPipController];
+            // [player initPipController];
         }  else {
             result(FlutterMethodNotImplemented);
         }
