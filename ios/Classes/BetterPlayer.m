@@ -22,6 +22,7 @@ AVPictureInPictureController *_pipController;
 @implementation BetterPlayer
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super init];
+    self.nativeView = [[UIView alloc] initWithFrame:frame];
     NSAssert(self, @"super init cannot be nil");
     _isInitialized = false;
     _isPlaying = false;
@@ -32,7 +33,12 @@ AVPictureInPictureController *_pipController;
     if (@available(iOS 10.0, *)) {
         _player.automaticallyWaitsToMinimizeStalling = false;
     }
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(applicationDidBecomeActive:)
+                                                     name:UIApplicationDidBecomeActiveNotification
+                                                   object:nil];
     self._observersAdded = false;
+    
     return self;
 }
 
@@ -74,6 +80,7 @@ AVPictureInPictureController *_pipController;
     _disposed = false;
     _failedCount = 0;
     _key = nil;
+    [self clearPip];
     if (_player.currentItem == nil) {
         return;
     }
@@ -628,6 +635,48 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     [self usePlayerLayer:frame];
 }
 
+- (void)stopPictureInPicture {
+    NSLog(@"Stopping picture in picture");
+    if (self._pipController && self._pipController.pictureInPictureActive) {
+        [self disablePictureInPicture];
+    }
+}
+
+- (void)applicationDidBecomeActive:(NSNotification *)notification {
+     if (self._pipController && [self._pipController isPictureInPictureActive]) {
+          [self._pipController stopPictureInPicture];
+     }
+     
+}
+
+- (void)initPipController{
+    self._playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player];
+    UIViewController* vc = [[[UIApplication sharedApplication] keyWindow] rootViewController];
+    self._playerLayer.frame = vc.view.bounds;
+    self._playerLayer.needsDisplayOnBoundsChange = YES;
+    //  [self._playerLayer addObserver:self forKeyPath:readyForDisplayKeyPath options:NSKeyValueObservingOptionNew context:nil];
+   [vc.view.layer addSublayer:self._playerLayer];
+   vc.view.layer.needsDisplayOnBoundsChange = YES;
+    // [self.nativeView.layer addSublayer:self._playerLayer];
+    if (@available(iOS 9.0, *)) {
+        [[AVAudioSession sharedInstance] setActive: YES error: nil];
+        [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
+
+        if ([AVPictureInPictureController isPictureInPictureSupported]) {
+            NSLog(@"initing pip controller");
+            self._pipController = [[AVPictureInPictureController alloc] initWithPlayerLayer:self._playerLayer];
+            if (@available(iOS 14.2, *)) {
+               self._pipController.canStartPictureInPictureAutomaticallyFromInline = true;
+            } else {
+                // Fallback on earlier versions
+            }
+            self._pipController.delegate = self;
+        }
+    } else {
+        // Fallback on earlier versions
+    }
+}
+
 - (void)usePlayerLayer: (CGRect) frame
 {
     if( _player )
@@ -654,14 +703,23 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 - (void)disablePictureInPicture
 {
     [self setPictureInPicture:true];
+    if (_eventSink != nil) {
+        _eventSink(@{@"event" : @"pipStop"});
+    }
+    
+}
+
+- (void)clearPip
+{
+    self._playerLayer.frame = CGRectZero;
     if (__playerLayer){
+        
         [self._playerLayer removeFromSuperlayer];
         self._playerLayer = nil;
-        if (_eventSink != nil) {
-            _eventSink(@{@"event" : @"pipStop"});
-        }
     }
+    
 }
+
 #endif
 
 #if TARGET_OS_IOS
@@ -673,14 +731,15 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (_eventSink != nil) {
         _eventSink(@{@"event" : @"pipStart"});
     }
+    
 }
 
 - (void)pictureInPictureControllerWillStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-
+    NSLog(@"Will stop picture in picture");
 }
 
 - (void)pictureInPictureControllerWillStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController {
-
+    
 }
 
 - (void)pictureInPictureController:(AVPictureInPictureController *)pictureInPictureController failedToStartPictureInPictureWithError:(NSError *)error {
@@ -753,11 +812,13 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)dispose {
+    [self disablePictureInPicture];
+    [self setPictureInPicture:false];
+    [self clearPip];
     [self pause];
     [self disposeSansEventChannel];
     [_eventChannel setStreamHandler:nil];
-    [self disablePictureInPicture];
-    [self setPictureInPicture:false];
+    
     _disposed = true;
 }
 
