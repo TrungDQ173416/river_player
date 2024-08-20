@@ -652,7 +652,11 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 - (void)initPipController{
     self._playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player];
     UIViewController* vc = [[[UIApplication sharedApplication] keyWindow] rootViewController];
-    self._playerLayer.frame = vc.view.bounds;
+    CGFloat widthScreen = [UIScreen mainScreen].bounds.size.width;
+    CGFloat heightScreen = [UIScreen mainScreen].bounds.size.height;
+
+    self._playerLayer.frame = CGRectMake(widthScreen / 2, heightScreen / 2, 1, 1);
+    // self._playerLayer.frame = vc.view.bounds;
     self._playerLayer.needsDisplayOnBoundsChange = YES;
     //  [self._playerLayer addObserver:self forKeyPath:readyForDisplayKeyPath options:NSKeyValueObservingOptionNew context:nil];
    [vc.view.layer addSublayer:self._playerLayer];
@@ -717,7 +721,6 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         [self._playerLayer removeFromSuperlayer];
         self._playerLayer = nil;
     }
-    
 }
 
 #endif
@@ -812,9 +815,9 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)dispose {
+    [self clearPip];
     [self disablePictureInPicture];
     [self setPictureInPicture:false];
-    [self clearPip];
     [self pause];
     [self disposeSansEventChannel];
     [_eventChannel setStreamHandler:nil];

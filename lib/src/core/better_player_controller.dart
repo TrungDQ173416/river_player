@@ -1065,6 +1065,10 @@ class BetterPlayerController {
     return _overriddenFit ?? betterPlayerConfiguration.fit;
   }
 
+  Future<void>? clearPip() async {
+    await videoPlayerController?.clearPip();
+  }
+
   ///Set up to start Picture in Picture automatically when close app.
   ///When device is not supported, PiP mode won't be open.
   Future<void>? setupAutomaticPictureInPictureTransition(
