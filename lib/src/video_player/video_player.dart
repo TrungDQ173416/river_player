@@ -609,7 +609,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   }
 
   Future<void> clearPip() async {
-    await _videoPlayerPlatform.clearPip();
+    await _videoPlayerPlatform.clearPip(textureId: textureId);
   }
 
   Future<void> setupAutomaticPictureInPictureTransition(
