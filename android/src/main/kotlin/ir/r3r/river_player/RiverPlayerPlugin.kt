@@ -452,19 +452,44 @@ class RiverPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             return res;
     }
 
-    private fun setupAutomaticPictureInPictureTransition(willStartPIP: Boolean, player: RiverPlayer) {
+    private fun clearPip() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            player.setupMediaSession(flutterState!!.applicationContext)
             val params = PictureInPictureParams.Builder()
                 .setAspectRatio(pipAspectRatio)
                 .setSourceRectHint(Rect())
-                .setAutoEnterEnabled(willStartPIP)
+                .setAutoEnterEnabled(false)
                 .build()
+
             activity?.setPictureInPictureParams(params)
-        } 
-        currentPlayer = player
-        showPictureInPictureAutomatically = willStartPIP
-        
+        }
+    }
+
+    private fun setupAutomaticPictureInPictureTransition(willStartPIP: Boolean, player: RiverPlayer) {
+        if (willStartPIP == false) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                player.setupMediaSession(flutterState!!.applicationContext)
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(pipAspectRatio)
+                    .setSourceRectHint(Rect())
+                    .setAutoEnterEnabled(willStartPIP)
+                    .build()
+
+                activity?.setPictureInPictureParams(params)
+            }
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                player.setupMediaSession(flutterState!!.applicationContext)
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(pipAspectRatio)
+                    .setSourceRectHint(Rect())
+                    .setAutoEnterEnabled(willStartPIP)
+                    .build()
+
+                activity?.setPictureInPictureParams(params)
+            } 
+            currentPlayer = player
+            showPictureInPictureAutomatically = willStartPIP
+        }
     }
 
     private fun enablePictureInPicture(player: RiverPlayer) {
@@ -500,6 +525,7 @@ class RiverPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     }
 
     private fun dispose(player: RiverPlayer, textureId: Long) {
+        clearPip()
         player.dispose()
         videoPlayers.remove(textureId)
         dataSources.remove(textureId)

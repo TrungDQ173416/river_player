@@ -138,7 +138,9 @@ abstract class VideoPlayerPlatform {
     throw UnimplementedError('getAbsolutePosition() has not been implemented.');
   }
 
-  Future<void> clearPip() {
+  Future<void> clearPip({
+    int? textureId,
+  }) {
     throw UnimplementedError('clearPip() has not been implemented.');
   }
 

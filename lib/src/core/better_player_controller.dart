@@ -1066,6 +1066,9 @@ class BetterPlayerController {
   }
 
   Future<void>? clearPip() async {
+    if (videoPlayerController == null) {
+      throw StateError("The data source has not been initialized");
+    }
     await videoPlayerController?.clearPip();
   }
 
@@ -1079,7 +1082,6 @@ class BetterPlayerController {
 
     final bool isPipSupported =
         (await videoPlayerController?.isPictureInPictureSupported()) ?? false;
-
     if (isPipSupported) {
       await videoPlayerController?.setupAutomaticPictureInPictureTransition(
         willStartPIP: willStartPIP,
