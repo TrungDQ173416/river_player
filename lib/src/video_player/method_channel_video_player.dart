@@ -232,20 +232,13 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   Future<void> clearPip({
     int? textureId,
   }) async {
-    debugPrint("clear pip ${Platform.isAndroid}");
-    if (Platform.isAndroid) {
-      return _channel.invokeMethod<void>(
-        'setupAutomaticPictureInPictureTransition',
-        <String, dynamic>{
-          'textureId': textureId,
-          'willStartPIP': false,
-        },
-      );
-    } else {
-      return _channel.invokeMethod<void>(
-        'clearPip',
-      );
-    }
+    return _channel.invokeMethod<void>(
+      'setupAutomaticPictureInPictureTransition',
+      <String, dynamic>{
+        'textureId': textureId,
+        'willStartPIP': false,
+      },
+    );
   }
 
   @override

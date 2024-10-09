@@ -310,7 +310,7 @@ bool _remoteCommandsInitialized = false;
             NSString* cacheKey = dataSource[@"cacheKey"];
             NSNumber* maxCacheSize = dataSource[@"maxCacheSize"];
             NSString* videoExtension = dataSource[@"videoExtension"];
-            
+
             int overriddenDuration = 0;
             if ([dataSource objectForKey:@"overriddenDuration"] != [NSNull null]){
                 overriddenDuration = [dataSource[@"overriddenDuration"] intValue];
@@ -429,14 +429,14 @@ bool _remoteCommandsInitialized = false;
             NSDictionary* headers = dataSource[@"headers"];
             NSNumber* maxCacheSize = dataSource[@"maxCacheSize"];
             NSString* videoExtension = dataSource[@"videoExtension"];
-            
+
             if (headers == [ NSNull null ]){
                 headers = @{};
             }
             if (videoExtension == [NSNull null]){
                 videoExtension = nil;
             }
-            
+
             if (urlArg != [NSNull null]){
                 NSURL* url = [NSURL URLWithString:urlArg];
                 if ([_cacheManager isPreCacheSupportedWithUrl:url videoExtension:videoExtension]){
@@ -469,9 +469,11 @@ bool _remoteCommandsInitialized = false;
         } else if ([@"setupAutomaticPictureInPictureTransition" isEqualToString:call.method]){
             // TODO: Implement
             NSLog(@"setupAutomaticPictureInPictureTransition willStartPIP: %d", [argsMap[@"willStartPIP"] boolValue]);
-            NSLog(@"setupAutomaticPictureInPictureTransition 12345 %d", player);
-
-            [player initPipController];
+            if ([argsMap[@"willStartPIP"] boolValue] == YES) {
+                [player initPipController];
+            } else {
+                [player clearPip];
+            }
         } else if ([@"clearPip" isEqualToString:call.method]) {
             [player clearPip];
         } else {
