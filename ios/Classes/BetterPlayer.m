@@ -38,7 +38,7 @@ AVPictureInPictureController *_pipController;
                                                      name:UIApplicationDidBecomeActiveNotification
                                                    object:nil];
     self._observersAdded = false;
-    
+
     return self;
 }
 
@@ -173,7 +173,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         fps = (int) ceil(nominalFrameRate);
     }
     videoComposition.frameDuration = CMTimeMake(1, fps);
-    
+
     return videoComposition;
 }
 
@@ -207,7 +207,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (headers == [NSNull null] || headers == NULL){
         headers = @{};
     }
-    
+
     AVPlayerItem* item;
     if (useCache){
         if (cacheKey == [NSNull null]){
@@ -216,7 +216,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         if (videoExtension == [NSNull null]){
             videoExtension = nil;
         }
-        
+
         item = [cacheManager getCachingPlayerItemForNormalPlayback:url cacheKey:cacheKey videoExtension: videoExtension headers:headers];
     } else {
         AVURLAsset* asset = [AVURLAsset URLAssetWithURL:url
@@ -560,8 +560,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         result([FlutterError errorWithCode:@"unsupported_speed"
                                    message:@"Speed must be >= 0.0 and <= 2.0"
                                    details:nil]);
-    } else if ((speed > 1.0) || (speed < 1.0)) { 
-        _playerRate = speed; result(nil); 
+    } else if ((speed > 1.0) || (speed < 1.0)) {
+        _playerRate = speed; result(nil);
     } else {
         if (speed > 1.0) {
             result([FlutterError errorWithCode:@"unsupported_fast_forward"
@@ -646,7 +646,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
      if (self._pipController && [self._pipController isPictureInPictureActive]) {
           [self._pipController stopPictureInPicture];
      }
-     
+
 }
 
 - (void)initPipController{
@@ -707,19 +707,22 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 - (void)disablePictureInPicture
 {
     [self setPictureInPicture:true];
-    if (_eventSink != nil) {
-        _eventSink(@{@"event" : @"pipStop"});
+    if (__playerLayer){
+        [self._playerLayer removeFromSuperlayer];
+        self._playerLayer = nil;
+        if (_eventSink != nil) {
+            _eventSink(@{@"event" : @"pipStop"});
+        }
     }
-    
+
 }
 
 - (void)clearPip
 {
-    self._playerLayer.frame = CGRectZero;
     if (__playerLayer){
-        
+        // self._playerLayer.frame = CGRectZero;
         [self._playerLayer removeFromSuperlayer];
-        self._playerLayer = nil;
+        // self._playerLayer = nil;
     }
 }
 
@@ -734,7 +737,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (_eventSink != nil) {
         _eventSink(@{@"event" : @"pipStart"});
     }
-    
+
 }
 
 - (void)pictureInPictureControllerWillStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
@@ -742,7 +745,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)pictureInPictureControllerWillStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController {
-    
+
 }
 
 - (void)pictureInPictureController:(AVPictureInPictureController *)pictureInPictureController failedToStartPictureInPictureWithError:(NSError *)error {
@@ -821,7 +824,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     [self pause];
     [self disposeSansEventChannel];
     [_eventChannel setStreamHandler:nil];
-    
+
     _disposed = true;
 }
 
